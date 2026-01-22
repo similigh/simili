@@ -1,9 +1,17 @@
-# Simili - Issue Intelligence
+<p align="center">
+  <img src="assets/logo.png" alt="Simili Logo" width="150">
+</p>
 
-[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Simili-blue?logo=github)](https://github.com/marketplace/actions/simili-issue-intelligence)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<h1 align="center">Simili - Issue Intelligence</h1>
 
-AI-powered GitHub issue intelligence that automatically detects duplicate issues and finds similar issues using semantic search. Supports cross-repo search and issue transfer rules.
+<p align="center">
+  <a href="https://github.com/marketplace/actions/simili-issue-intelligence"><img src="https://img.shields.io/badge/Marketplace-Simili-blue?logo=github" alt="GitHub Marketplace"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+</p>
+
+<p align="center">
+  AI-powered GitHub issue intelligence that automatically detects duplicate issues and finds similar issues using semantic search. Supports cross-repo search and issue transfer rules.
+</p>
 
 ## Features
 
