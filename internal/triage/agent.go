@@ -10,6 +10,7 @@ import (
 	"github.com/Kavirubc/gh-simili/internal/github"
 	"github.com/Kavirubc/gh-simili/internal/llm"
 	"github.com/Kavirubc/gh-simili/internal/processor"
+	"github.com/Kavirubc/gh-simili/internal/transfer"
 	"github.com/Kavirubc/gh-simili/internal/vectordb"
 	"github.com/Kavirubc/gh-simili/pkg/models"
 )
@@ -54,14 +55,27 @@ func (a *Agent) Triage(ctx context.Context, issue *models.Issue) (*Result, error
 		Actions: []Action{},
 	}
 
+	// Step 0: Check transfer rules FIRST - if issue should be transferred, skip duplicate detection
+	// Transfer rules take precedence over duplicate detection to avoid closing issues that should be moved
+	repoConfig := a.cfg.GetRepoConfig(issue.Org, issue.Repo)
+	shouldSkipDuplicateCheck := false
+	if repoConfig != nil && len(repoConfig.TransferRules) > 0 {
+		matcher := transfer.NewRuleMatcher(repoConfig.TransferRules)
+		if target, _ := matcher.Match(issue); target != "" {
+			// Transfer rule matches - skip duplicate detection to avoid closing before transfer
+			log.Printf("Transfer rule matches for issue #%d (target: %s), skipping duplicate detection", issue.Number, target)
+			shouldSkipDuplicateCheck = true
+		}
+	}
+
 	// Step 1: Find similar issues
 	similarIssues, err := a.similarity.FindSimilar(ctx, issue, true)
 	if err != nil {
 		log.Printf("Warning: failed to find similar issues: %v", err)
 	}
 
-	// Step 2: Check for duplicates
-	if a.cfg.Triage.Duplicate.Enabled && len(similarIssues) > 0 {
+	// Step 2: Check for duplicates (only if no transfer rule matched)
+	if !shouldSkipDuplicateCheck && a.cfg.Triage.Duplicate.Enabled && len(similarIssues) > 0 {
 		dupResult := a.duplicate.Check(similarIssues)
 		result.Duplicate = dupResult
 
