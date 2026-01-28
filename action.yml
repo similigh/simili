@@ -8,7 +8,7 @@ branding:
 
 inputs:
   command:
-    description: 'Command to run: "process" for similarity comments, "triage" for AI-powered labeling/quality/duplicates'
+    description: 'Command to run: "process" for similarity/transfer, "triage" for AI labeling/duplicates, "full-process" for unified pipeline'
     required: false
     default: 'process'
   config_path:
@@ -20,7 +20,7 @@ inputs:
     required: false
     default: 'false'
   execute:
-    description: 'For triage command: execute actions (add labels, close duplicates). If false, only analyzes.'
+    description: 'For triage/full-process: execute actions (add labels, close duplicates). If false, only analyzes.'
     required: false
     default: 'true'
   github_token:
@@ -41,7 +41,8 @@ runs:
     - --config
     - ${{ inputs.config_path }}
     - ${{ inputs.dry_run == 'true' && '--dry-run' || '' }}
-    - ${{ inputs.command == 'triage' && inputs.execute == 'true' && '--execute' || '' }}
+    - ${{ (inputs.command == 'triage' || inputs.command == 'full-process') && inputs.execute == 'true' && '--execute' || '' }}
   env:
     GITHUB_TOKEN: ${{ inputs.github_token }}
     TRANSFER_TOKEN: ${{ inputs.transfer_token }}
+
