@@ -401,29 +401,30 @@ func (up *UnifiedProcessor) ProcessIssue(ctx context.Context, issue *models.Issu
 	// Step 8.5: Execute transfer if matched (after posting unified comment)
 	if result.TransferTarget != "" && up.execute && !up.dryRun {
 		executor := transfer.NewExecutor(up.transferClient, up.gh, up.vdb, up.cfg, up.dryRun)
-		// Use silent scheduling if unified comment was posted
-		if result.CommentPosted {
+
+		// If optimistic transfers are enabled, execute immediately (it will post its own comment)
+		if up.cfg.Defaults.DelayedActions.Enabled && up.cfg.Defaults.DelayedActions.OptimisticTransfers {
+			if err := executor.Transfer(ctx, issue, result.TransferTarget, transferRule); err != nil {
+				log.Printf("Warning: failed to execute optimistic transfer: %v", err)
+			} else {
+				result.Transferred = true
+				result.ActionsExecuted++
+			}
+		} else if result.CommentPosted {
+			// Traditional delayed transfer: Use silent scheduling if unified comment was posted
 			if err := executor.ScheduleTransferSilent(ctx, issue, result.TransferTarget, commentID); err != nil {
 				log.Printf("Warning: failed to schedule transfer: %v", err)
 			} else {
-				result.Transferred = true
+				// Scheduled successfully
 			}
 		} else {
+			// Fallback: regular transfer (will check delayed actions config inside)
 			if err := executor.Transfer(ctx, issue, result.TransferTarget, transferRule); err != nil {
-				log.Printf("Warning: failed to schedule transfer: %v", err)
+				log.Printf("Warning: failed to transfer: %v", err)
 			} else {
 				result.Transferred = true
+				result.ActionsExecuted++
 			}
-		}
-	}
-
-	// Step 8.5: Execute transfer if matched (after posting unified comment)
-	if result.TransferTarget != "" && up.execute && !up.dryRun {
-		executor := transfer.NewExecutor(up.transferClient, up.gh, up.vdb, up.cfg, up.dryRun)
-		if err := executor.Transfer(ctx, issue, result.TransferTarget, transferRule); err != nil {
-			log.Printf("Warning: failed to schedule transfer: %v", err)
-		} else {
-			result.Transferred = true
 		}
 	}
 
@@ -566,8 +567,8 @@ func (up *UnifiedProcessor) buildUnifiedComment(result *UnifiedResult, similarIs
 		}
 	}
 
-	// Transfer section
-	if result.TransferTarget != "" {
+	// Transfer section (only if not optimistic - optimistic transfers post their own comment)
+	if result.TransferTarget != "" && !(up.cfg.Defaults.DelayedActions.Enabled && up.cfg.Defaults.DelayedActions.OptimisticTransfers) {
 		sections = append(sections, up.formatTransferSection(result.TransferTarget, result.PendingAction))
 	}
 
