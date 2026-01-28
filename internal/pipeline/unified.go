@@ -414,8 +414,6 @@ func (up *UnifiedProcessor) ProcessIssue(ctx context.Context, issue *models.Issu
 			// Traditional delayed transfer: Use silent scheduling if unified comment was posted
 			if err := executor.ScheduleTransferSilent(ctx, issue, result.TransferTarget, commentID); err != nil {
 				log.Printf("Warning: failed to schedule transfer: %v", err)
-			} else {
-				// Scheduled successfully
 			}
 		} else {
 			// Fallback: regular transfer (will check delayed actions config inside)
